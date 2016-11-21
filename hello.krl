@@ -15,30 +15,43 @@ A first ruleset for the Quickstart
       msg
     };
   }
-  rule hello_world {
+  rule hello_world{
     select when echo hello
-  pre{
-    name = event:attr("name").defaultsTo(ent:name,"use stored name");
-  }
-  {
-    send_directive("say") with
-      greeting = "Hello #{name}";
-  }
-  always{
-    log("LOG says Hello " + name);
-  }
+    pre{
+      id = event:attr("id").defaultsTo("_0", "no id passed.");
+      first = ent:name{[id, "name", "first"]};
+      last = ent:name{[id, "name", "last"]};
+    }
+    {
+      send_directive("say") with
+        greeting = "Hello #{first} #{last}";
+    }
+    always{
+      log("LOG says Hello " + first + " " + last);
+    }
   }
   rule store_name{
     select when hello name
     pre{
-      passed_name = event:attr("name").klog("our passed in Name: ");
+      id = event:attr("id").klog("our passed in id: ");
+      first = event:attr("first").klog("our passed in first name: ");
+      last = event:attr("last").klog("our passed in last name: ");
+      init = {"_0":{
+        "name":{
+          "first":"GLaDOS",
+          "last":""}}
+    }
     }
     {
       send_directive("store_name") with
-      name = passed_name;
+      passed_id = id and
+      passed_first = first and
+      passed_last = last;
     }
     always{
-      set ent:name passed_name;
+      set ent:name init if not ent:name{["_0"]};
+      set ent:name{[id, "name", "first"]} first;
+      set ent:name{[id, "name", "last"]} last;
     }
   }
 }
